@@ -4,9 +4,9 @@ import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Set;
 
 import org.json.*;
 
@@ -68,17 +68,12 @@ public class restTest {
 				parseTransactions(pages);
 				
 				calculateAndPrintBalance();
-				
-				
-				
-				
+
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}			
 		}
-		
-		
 
 	}
 	
@@ -86,6 +81,9 @@ public class restTest {
 		ArrayList<String> dates = new ArrayList<String>(transactionsMap.keySet());
 		java.util.Collections.sort(dates);
 		ArrayList<TransactionNode> transactions;
+		
+		// Nifty demical formatting pattern found online!
+		DecimalFormat currencyFormat = new DecimalFormat("$#,##0.00;-$#,##0.00");
 		
 		double totalBalance = 0;
 		double totalExpenses = 0;
@@ -95,11 +93,11 @@ public class restTest {
 		double dailyExpenses;
 		double dailyPayments;
 		
-		System.out.println("Date\t\t\tDaily Balance\t\t\tDaily Expenses\t\t\tDaily Payments");
-		System.out.println("----\t\t\t-------------\t\t\t--------------\t\t\t--------------");
+
+		printAndFormatColumns("Date", "Daily Balance", "Daily Expenses", "Daily Payments");
+		printAndFormatColumns("----", "-------------", "--------------", "--------------");
 		
 		for (String date : dates) {
-			System.out.println(date);
 			transactions = transactionsMap.get(date);
 			
 			dailyBalance = 0;
@@ -115,11 +113,32 @@ public class restTest {
 				}
 			}
 			
-			System.out.println(date+ "\t" + dailyBalance + "\t\t" + dailyExpenses + "\t\t" + dailyPayments);
+			printAndFormatColumns(date, currencyFormat.format(dailyBalance), 
+										     currencyFormat.format(dailyExpenses), 
+										     currencyFormat.format(dailyPayments));
+			
 			totalBalance += dailyBalance;
 			totalExpenses += dailyExpenses;
 			totalPayments += dailyPayments;
 		}
+		
+		System.out.println("\n");
+		printAndFormatColumns("Total Balance", "Total Expenses", "Total Payments");
+		printAndFormatColumns("-------------", "--------------", "--------------");
+		
+		printAndFormatColumns(currencyFormat.format(totalBalance),
+								   currencyFormat.format(totalExpenses),
+								   currencyFormat.format(totalPayments));
+	}
+	
+	private static void printAndFormatColumns(String... columns) {
+		String spaces = "                    ";
+		
+		for (String col : columns) {
+			System.out.print(col);
+			System.out.print(spaces.substring(col.length()));
+		}
+		System.out.println("");
 	}
 	
 	private static int calculateTransactionsLeft(int currentTotal, int transOnPage) {
