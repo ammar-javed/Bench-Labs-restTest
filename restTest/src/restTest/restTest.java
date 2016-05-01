@@ -13,12 +13,17 @@ import org.json.*;
 
 public class restTest {
 	
+	/*
+	 * Hashmap which holds all transactions for each unique date
+	 */
 	public static HashMap<String, ArrayList<TransactionNode>> transactionsMap;
 
 	public static void main(String[] args) {
 		
+		// total number of transactions
 		int totalCount;
 		
+		// Arraylist holding JSONObjects for each page retrieved from endpoint
 		ArrayList<JSONObject> pages;
 
 		int currentPage = 1;
@@ -27,25 +32,25 @@ public class restTest {
 		if (page != null) {
 			try {
 				
-				/*
-				 * Calculate how many pages we need to read from the endpoint 
-				 */
 				
-				// Init new arraylist to keep track of all pages
+				// Calculate how many pages we need to read from the endpoint 
 				pages = new ArrayList<JSONObject>();
 				pages.add(page);
 				
 				totalCount = page.getInt(Constants.PAGE_TOTAL_COUNT_KEY);
+				
 				System.out.println("Total transactions:");
 				System.out.println(totalCount);
 
-				
+				// Number of transactions each page contains
+				// Keeps the code dynamic assuming each page doesn't always contain 10 transactions
 				JSONArray transOnPage = page.getJSONArray(Constants.TRANSACTION_KEY);
-
 				int transactionsLeft = calculateTransactionsLeft(totalCount, transOnPage.length());
+				
 				System.out.println("Transactions Left to load:");
 				System.out.println(transactionsLeft);
 				
+				// Get the next page if there's still transactions left to retrieve (in pages)
 				while (transactionsLeft > 0) {
 					currentPage++;
 					page = getTransactionsJSONObject(Constants.API_ENDPOINT + currentPage + ".json");
@@ -59,11 +64,9 @@ public class restTest {
 				}
 				
 				System.out.println("Total pages:");
-				System.out.println(pages.size());
+				System.out.println(pages.size() + "\n\n");
 				
-				/*
-				 * Parse transactions and store them by date
-				 */
+				// Parse transactions and store them by date
 				transactionsMap = new HashMap<String, ArrayList<TransactionNode>>();
 				parseTransactions(pages);
 				
@@ -77,7 +80,11 @@ public class restTest {
 
 	}
 	
+	/**
+	 * Calculates daily and total balance
+	 */
 	private static void calculateAndPrintBalance(){		
+		// Sort dates stored in transactionsMap
 		ArrayList<String> dates = new ArrayList<String>(transactionsMap.keySet());
 		java.util.Collections.sort(dates);
 		ArrayList<TransactionNode> transactions;
@@ -85,10 +92,12 @@ public class restTest {
 		// Nifty demical formatting pattern found online!
 		DecimalFormat currencyFormat = new DecimalFormat("$#,##0.00;-$#,##0.00");
 		
+		// Totals
 		double totalBalance = 0;
 		double totalExpenses = 0;
 		double totalPayments = 0;
 		
+		// Daily figures
 		double dailyBalance;
 		double dailyExpenses;
 		double dailyPayments;
@@ -130,8 +139,13 @@ public class restTest {
 								   currencyFormat.format(totalExpenses),
 								   currencyFormat.format(totalPayments));
 	}
-	
+
+	/**
+	 * Formats arguments passed on as evenly spaced columns
+	 * @param columns Variable argument; each column to print and format
+	 */
 	private static void printAndFormatColumns(String... columns) {
+		// Assume no string is larger than 25 characters
 		String spaces = "                    ";
 		
 		for (String col : columns) {
@@ -140,11 +154,22 @@ public class restTest {
 		}
 		System.out.println("");
 	}
-	
+
+	/**
+	 * Calculate how many transactions are left
+	 * @param currentTotal Transactions expected
+	 * @param transOnPage Transactions on current page
+	 * @return # of transactions left [to load]
+	 */
 	private static int calculateTransactionsLeft(int currentTotal, int transOnPage) {
 		return currentTotal - transOnPage;
 	}
 	
+	/**
+	 * Parses the JSON objects retrieved from the API, creates TransactionNodes for each
+	 * to store them in memory and adds them in the transactionsMap (HashMap) under appropriate day
+	 * @param pages List containing all pages loaded from API
+	 */
 	private static void parseTransactions(ArrayList<JSONObject> pages) {
 		
 		for (JSONObject page : pages) {
@@ -160,11 +185,14 @@ public class restTest {
 					String amount = trans.getString(Constants.TRANSACTION_AMOUNT_KEY);
 					String company = trans.getString(Constants.TRANSACTION_COMPANY_KEY);
 					
+					//Create new node which will convert/format the date and amount as necessary
 					TransactionNode transaction = new TransactionNode(date, ledger, amount, company);
 					
 					if(transactionsMap.containsKey(date)) {
+						// Add to hashmap
 						transactionsMap.get(date).add(transaction);
 					} else {
+						// Create new entry
 						ArrayList<TransactionNode> listOfTransactions = new ArrayList<TransactionNode>();
 						listOfTransactions.add(transaction);
 						transactionsMap.put(date, listOfTransactions);
@@ -176,7 +204,12 @@ public class restTest {
 			}
 		}
 	}
-	
+
+	/**
+	 * Connect to API and retrieve pages of transactions
+	 * @param urlString
+	 * @return JSONObject retrieved from API
+	 */
 	private static JSONObject getTransactionsJSONObject(String urlString) {
 
 		StringBuilder sb = new StringBuilder();
@@ -192,7 +225,7 @@ public class restTest {
 			urlConnection = url.openConnection();
 			
 			if (urlConnection != null)
-				urlConnection.setReadTimeout(60000);
+				urlConnection.setReadTimeout(60000); // Timeout for response
 			
 			if (urlConnection != null && urlConnection.getInputStream() != null) {
 				
