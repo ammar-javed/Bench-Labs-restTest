@@ -6,6 +6,7 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Set;
 
 import org.json.*;
 
@@ -63,8 +64,12 @@ public class restTest {
 				/*
 				 * Parse transactions and store them by date
 				 */
-				
+				transactionsMap = new HashMap<String, ArrayList<TransactionNode>>();
 				parseTransactions(pages);
+				
+				calculateAndPrintBalance();
+				
+				
 				
 				
 			} catch (JSONException e) {
@@ -75,6 +80,46 @@ public class restTest {
 		
 		
 
+	}
+	
+	private static void calculateAndPrintBalance(){		
+		ArrayList<String> dates = new ArrayList<String>(transactionsMap.keySet());
+		java.util.Collections.sort(dates);
+		ArrayList<TransactionNode> transactions;
+		
+		double totalBalance = 0;
+		double totalExpenses = 0;
+		double totalPayments = 0;
+		
+		double dailyBalance;
+		double dailyExpenses;
+		double dailyPayments;
+		
+		System.out.println("Date\t\t\tDaily Balance\t\t\tDaily Expenses\t\t\tDaily Payments");
+		System.out.println("----\t\t\t-------------\t\t\t--------------\t\t\t--------------");
+		
+		for (String date : dates) {
+			System.out.println(date);
+			transactions = transactionsMap.get(date);
+			
+			dailyBalance = 0;
+			dailyExpenses = 0;
+			dailyPayments = 0;
+			
+			for (TransactionNode trans : transactions) {
+				dailyBalance += trans.amount;
+				if (trans.amount < 0) {
+					dailyExpenses += trans.amount;
+				} else {
+					dailyPayments += trans.amount;
+				}
+			}
+			
+			System.out.println(date+ "\t" + dailyBalance + "\t\t" + dailyExpenses + "\t\t" + dailyPayments);
+			totalBalance += dailyBalance;
+			totalExpenses += dailyExpenses;
+			totalPayments += dailyPayments;
+		}
 	}
 	
 	private static int calculateTransactionsLeft(int currentTotal, int transOnPage) {

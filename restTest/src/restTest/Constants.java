@@ -12,12 +12,12 @@ public class Constants {
 	
 	public static String TRANSACTION_KEY = "transactions";
 	
-	public static String TRANSACTION_DATE_KEY = "date";
+	public static String TRANSACTION_DATE_KEY = "Date";
 	
-	public static String TRANSACTION_LEDGER_KEY = "ledger";
+	public static String TRANSACTION_LEDGER_KEY = "Ledger";
 	
-	public static String TRANSACTION_AMOUNT_KEY = "amount";
+	public static String TRANSACTION_AMOUNT_KEY = "Amount";
 	
-	public static String TRANSACTION_COMPANY_KEY = "company";
+	public static String TRANSACTION_COMPANY_KEY = "Company";
 
 }
