@@ -5,29 +5,36 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.json.*;
 
 
 public class restTest {
 	
-	private static int totalCount;
-	
-	private static ArrayList<JSONObject> pages;
+	public static HashMap<String, ArrayList<TransactionNode>> transactionsMap;
 
 	public static void main(String[] args) {
 		
+		int totalCount;
+		
+		ArrayList<JSONObject> pages;
+
 		int currentPage = 1;
 		JSONObject page = getTransactionsJSONObject(Constants.API_ENDPOINT + currentPage + ".json");
 		
 		if (page != null) {
 			try {
 				
+				/*
+				 * Calculate how many pages we need to read from the endpoint 
+				 */
+				
 				// Init new arraylist to keep track of all pages
 				pages = new ArrayList<JSONObject>();
 				pages.add(page);
 				
-				totalCount = page.getInt(Constants.TRANSACTION_TOTAL_COUNT_KEY);
+				totalCount = page.getInt(Constants.PAGE_TOTAL_COUNT_KEY);
 				System.out.println("Total transactions:");
 				System.out.println(totalCount);
 
@@ -53,16 +60,57 @@ public class restTest {
 				System.out.println("Total pages:");
 				System.out.println(pages.size());
 				
+				/*
+				 * Parse transactions and store them by date
+				 */
+				
+				parseTransactions(pages);
+				
+				
 			} catch (JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}			
 		}
+		
+		
 
 	}
 	
 	private static int calculateTransactionsLeft(int currentTotal, int transOnPage) {
 		return currentTotal - transOnPage;
+	}
+	
+	private static void parseTransactions(ArrayList<JSONObject> pages) {
+		
+		for (JSONObject page : pages) {
+			try {
+				
+				JSONArray transactions = page.getJSONArray(Constants.TRANSACTION_KEY);
+				
+				for (int i = 0; i < transactions.length(); i++) {
+					JSONObject trans = transactions.getJSONObject(i);
+					
+					String date = trans.getString(Constants.TRANSACTION_DATE_KEY);
+					String ledger = trans.getString(Constants.TRANSACTION_LEDGER_KEY);
+					String amount = trans.getString(Constants.TRANSACTION_AMOUNT_KEY);
+					String company = trans.getString(Constants.TRANSACTION_COMPANY_KEY);
+					
+					TransactionNode transaction = new TransactionNode(date, ledger, amount, company);
+					
+					if(transactionsMap.containsKey(date)) {
+						transactionsMap.get(date).add(transaction);
+					} else {
+						ArrayList<TransactionNode> listOfTransactions = new ArrayList<TransactionNode>();
+						listOfTransactions.add(transaction);
+						transactionsMap.put(date, listOfTransactions);
+					}
+				}
+				
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	private static JSONObject getTransactionsJSONObject(String urlString) {
