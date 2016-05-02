@@ -7,7 +7,6 @@ import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import org.json.*;
 
@@ -20,11 +19,12 @@ public class restTest {
 	public static HashMap<String, ArrayList<TransactionNode>> transactionsMap;
 	
 	/*
-	 * Verbose setting passed through command line argument
+	 * Flag settings passed through command line argument
 	 */
 	static boolean verbose = false;
 	static boolean daily = false;
-	static boolean daily_verbose = false;
+	static boolean dailyVerbose = false;
+	static boolean expenseList = false;
 	
 	public static void main(String[] args) {
 				
@@ -80,6 +80,9 @@ public class restTest {
 				transactionsMap = new HashMap<String, ArrayList<TransactionNode>>();
 				parseTransactions(pages);
 				
+				if (expenseList || verbose)
+					calculateAndPrintExpenseList();
+					
 				calculateAndPrintBalance();
 
 			} catch (JSONException e) {
@@ -90,6 +93,10 @@ public class restTest {
 
 	}
 
+	/**
+	 * Parses commandline arguments and turns on relevant internal flags
+	 * @param args command line arguments passed to main
+	 */
 	private static void parseArguments(String[] args) {
 		if (args.length < 1) {
 			return;
@@ -101,12 +108,13 @@ public class restTest {
 					verbose = true;
 					break;
 				case Constants.VERBOSE_DAILY_BALANCE:
-					daily_verbose = true;
+					dailyVerbose = true;
 					break;
 				case Constants.DAILY_BALANCE:
 					daily = true;
 					break;
-				case Constants.CATEGORIZE:
+				case Constants.EXPENSE_LIST:
+					expenseList = true;
 					break;
 				default:
 					System.out.println("Bad argument" + arg);
@@ -140,10 +148,17 @@ public class restTest {
 		double dailyExpenses;
 		double dailyPayments;
 		
+		if (verbose || daily || dailyVerbose) {
+			System.out.println("\n\n");
+			printAndFormatColumns("", "Daily Balance Report", "");
+			printAndFormatColumns("", "--------------------", "");
+			System.out.println("\n\n");
+		}
+		
 		if (!verbose && daily) {
 			printAndFormatColumns("Daily Balance", "Payments", "Expenses", "Date");
 			printAndFormatColumns("-------------", "--------", "--------", "----");
-		} else if (verbose || daily_verbose) {
+		} else if (verbose || dailyVerbose) {
 			printAndFormatColumns("Company", "Daily Balance", "Payments", "Expenses", "Date");
 			printAndFormatColumns("-------", "-------------", "--------", "--------", "----");
 		}
@@ -160,16 +175,16 @@ public class restTest {
 				
 				if (trans.amount < 0) {
 					
-					if (verbose || daily_verbose)
+					if (verbose || dailyVerbose)
 						printAndFormatColumns(trans.company.substring(0, 10),
 											  "",
 											  "",
-											  currencyFormat.format(trans.amount * -1),
+											  currencyFormat.format(trans.amount),
 											  date);
 					
 					dailyExpenses += trans.amount;
 				} else {
-					if (verbose || daily_verbose)
+					if (verbose || dailyVerbose)
 						printAndFormatColumns(trans.company.substring(0, 10),
 											  "",
 											  currencyFormat.format(trans.amount),
@@ -190,9 +205,9 @@ public class restTest {
 											currencyFormat.format(dailyExpenses),
 											date);
 				System.out.println("");
-			} else if (verbose || daily_verbose) {
+			} else if (verbose || dailyVerbose) {
 				System.out.println("");
-				printAndFormatColumns("---Total---", currencyFormat.format(dailyBalance),
+				printAndFormatColumns("Total", currencyFormat.format(dailyBalance),
 						currencyFormat.format(dailyPayments),
 						currencyFormat.format(dailyExpenses),
 						"");
@@ -210,6 +225,71 @@ public class restTest {
 	}
 	
 
+	/**
+	 * Prints the expense list
+	 */
+	private static void calculateAndPrintExpenseList() {
+		HashMap<String, ArrayList<TransactionNode>> expenseMap = groupTransactionsByExpense();
+		
+		// Nifty decimal formatting pattern found online!
+		DecimalFormat currencyFormat = new DecimalFormat("$#,##0.00;-$#,##0.00");
+		
+		printAndFormatColumns("", "Expense Report", "");
+		printAndFormatColumns("", "--------------", "");
+		System.out.println("");
+		
+		for (String expense : expenseMap.keySet()) {
+			System.out.println(expense);
+			System.out.println("");
+			
+			printAndFormatColumns("", "Name", "Expense");
+			printAndFormatColumns("", "----", "-------");
+			
+			double ledgeExpense = 0;
+			
+			ArrayList<TransactionNode> transactions = expenseMap.get(expense);
+			for (TransactionNode trans : transactions) {
+				printAndFormatColumns("", 
+									  trans.company.substring(0, 10), 
+									  currencyFormat.format(trans.amount));
+				
+				ledgeExpense += trans.amount;
+			}
+			
+			System.out.println("");
+			printAndFormatColumns("Total", "", currencyFormat.format(ledgeExpense));
+			System.out.println("");
+		}
+		
+	}
+	
+	/**
+	 * Helper function which changes groupings for transactions (Expenses instead of date)
+	 * It removes all payments from the final map since this only considers expenses.
+	 * @return new hashmap with the Ledger as the key
+	 */
+	private static HashMap<String, ArrayList<TransactionNode>> groupTransactionsByExpense(){
+		HashMap<String, ArrayList<TransactionNode>> newMap = new HashMap<String, ArrayList<TransactionNode>>();
+		
+		ArrayList<TransactionNode> transDate;
+		for (String date : transactionsMap.keySet()) {
+			transDate = transactionsMap.get(date);
+			
+			for (TransactionNode node : transDate) {
+				if (!node.ledger.equals("")) {
+					if (newMap.containsKey(node.ledger)) {
+						newMap.get(node.ledger).add(node);
+					} else {
+						ArrayList<TransactionNode> newList = new ArrayList<TransactionNode>();
+						newList.add(node);
+						newMap.put(node.ledger, newList);
+					}
+				}
+			}
+		}
+		return newMap;
+	}
+	
 	/**
 	 * Formats arguments passed on as evenly spaced columns
 	 * @param columns Variable argument; each column to print and format

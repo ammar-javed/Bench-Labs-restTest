@@ -24,6 +24,6 @@ public class Constants {
 	
 	public static final String VERBOSE = "-v";
 	public static final String DAILY_BALANCE = "--daily";
-	public static final String CATEGORIZE = "--cat";
 	public static final String VERBOSE_DAILY_BALANCE = "--verbose-daily";
+	public static final String EXPENSE_LIST = "--exp";
 }

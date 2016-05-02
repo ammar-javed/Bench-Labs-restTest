@@ -6,7 +6,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+/**
+ * @author Ammar Javed
+ * This node class was made with the intention of using Linked Lists as a representation of 
+ * the transactions provided by the API. 
+ *
+ */
 class TransactionNode {
+	
 	Date date;
 	
 	String ledger;
@@ -19,6 +26,7 @@ class TransactionNode {
 	
 	public TransactionNode(String d, String l, String a, String c) {
 		
+		// Parse the string date into a comparable format
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
 		try {
 			this.date = dateFormat.parse(d);
