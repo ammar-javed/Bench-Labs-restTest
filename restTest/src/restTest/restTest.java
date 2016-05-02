@@ -80,9 +80,11 @@ public class restTest {
 				transactionsMap = new HashMap<String, ArrayList<TransactionNode>>();
 				parseTransactions(pages);
 				
+				//Print the Expense list if verbose or exp flags were set
 				if (expenseList || verbose)
 					calculateAndPrintExpenseList();
 					
+				// Print the total balance.
 				calculateAndPrintBalance();
 
 			} catch (JSONException e) {
@@ -125,9 +127,41 @@ public class restTest {
 			}
 		}
 	}
+	
+	/**
+	 * Format and print appropriate header for Daily balance report
+	 */
+	private static void printDailyBalanceHeader() {
+		if (verbose || daily || dailyVerbose) {
+			System.out.println("\n\n");
+			printAndFormatColumns("", "Daily Balance Report", "");
+			printAndFormatColumns("", "--------------------", "");
+			System.out.println("\n\n");
+		}
+		
+		if (!verbose && daily) {
+			printAndFormatColumns("Daily Balance", "Payments", "Expenses", "Date");
+			printAndFormatColumns("-------------", "--------", "--------", "----");
+		} else if (verbose || dailyVerbose) {
+			printAndFormatColumns("Company", "Daily Balance", "Payments", "Expenses", "Date");
+			printAndFormatColumns("-------", "-------------", "--------", "--------", "----");
+		}
+	}
+	
+	private static void printSummaryHeader() {
+		
+		printAndFormatColumns("", "Summary Report", "");
+		printAndFormatColumns("", "--------------", "");
+		System.out.println("\n");
+		printAndFormatColumns("Final Balance", "Total Payments", "Total Expenses");
+		printAndFormatColumns("-------------", "--------------", "--------------");
+		
+	}
 
 	/**
-	 * Calculates daily and total balance
+	 * Calculates daily and total balance.
+	 * It brings the daily balance only if the flag is set, otherwise 
+	 * only calculates and prints the final summary
 	 */
 	private static void calculateAndPrintBalance(){		
 		// Sort dates stored in transactionsMap
@@ -148,20 +182,8 @@ public class restTest {
 		double dailyExpenses;
 		double dailyPayments;
 		
-		if (verbose || daily || dailyVerbose) {
-			System.out.println("\n\n");
-			printAndFormatColumns("", "Daily Balance Report", "");
-			printAndFormatColumns("", "--------------------", "");
-			System.out.println("\n\n");
-		}
+		printDailyBalanceHeader();
 		
-		if (!verbose && daily) {
-			printAndFormatColumns("Daily Balance", "Payments", "Expenses", "Date");
-			printAndFormatColumns("-------------", "--------", "--------", "----");
-		} else if (verbose || dailyVerbose) {
-			printAndFormatColumns("Company", "Daily Balance", "Payments", "Expenses", "Date");
-			printAndFormatColumns("-------", "-------------", "--------", "--------", "----");
-		}
 		for (String date : dates) {
 			transactions = transactionsMap.get(date);
 			
@@ -200,33 +222,46 @@ public class restTest {
 			totalPayments += dailyPayments;
 			
 			if (!verbose && daily){
+				
 				printAndFormatColumns(currencyFormat.format(totalBalance),
-											currencyFormat.format(dailyPayments),
-											currencyFormat.format(dailyExpenses),
-											date);
+									  currencyFormat.format(dailyPayments),
+								   	  currencyFormat.format(dailyExpenses),
+								   	  date);
 				System.out.println("");
+				
 			} else if (verbose || dailyVerbose) {
+				
 				System.out.println("");
-				printAndFormatColumns("Total", currencyFormat.format(dailyBalance),
-						currencyFormat.format(dailyPayments),
-						currencyFormat.format(dailyExpenses),
-						"");
+				printAndFormatColumns("Total", 
+									  currencyFormat.format(dailyBalance),
+									  currencyFormat.format(dailyPayments),
+									  currencyFormat.format(dailyExpenses),
+									  "");
 				System.out.println("");
+				
 			}
 		}
 		
-		System.out.println("\n");
-		printAndFormatColumns("Final Balance", "Total Payments", "Total Expenses");
-		printAndFormatColumns("-------------", "--------------", "--------------");
+		printSummaryHeader();
 		
 		printAndFormatColumns(currencyFormat.format(totalBalance),
 							  currencyFormat.format(totalPayments),
 							  currencyFormat.format(totalExpenses));
 	}
 	
+	/**
+	 * Print Expense report header
+	 */
+	private static void printExpenseReportHeader() {
+
+		printAndFormatColumns("", "Expense Report", "");
+		printAndFormatColumns("", "--------------", "");
+		System.out.println("");
+		
+	}
 
 	/**
-	 * Prints the expense list
+	 * Calculates and prints the expense list
 	 */
 	private static void calculateAndPrintExpenseList() {
 		HashMap<String, ArrayList<TransactionNode>> expenseMap = groupTransactionsByExpense();
@@ -234,9 +269,7 @@ public class restTest {
 		// Nifty decimal formatting pattern found online!
 		DecimalFormat currencyFormat = new DecimalFormat("$#,##0.00;-$#,##0.00");
 		
-		printAndFormatColumns("", "Expense Report", "");
-		printAndFormatColumns("", "--------------", "");
-		System.out.println("");
+		printExpenseReportHeader();
 		
 		for (String expense : expenseMap.keySet()) {
 			System.out.println(expense);
