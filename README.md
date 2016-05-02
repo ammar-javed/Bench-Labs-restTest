@@ -11,9 +11,11 @@ This will output the Final Balance, Total Payments and Total Expenses report.
 
 There are  multiple flags which are supported:
 
-`java -jar restTest.jar [-v] [--daily] [--verbose-daily]`
+`java -jar restTest.jar [-v] [--exp] [--daily] [--verbose-daily]`
 
 The `-v` (verbose) flag outputs everything, ranging from number of pages read from the API, to every single daily transaction information.
+
+The `--exp` flag outputs an expense report categorized by the different ledger options.
 
 The `--daily` flag outputs a calculated Daily Balance.
 
