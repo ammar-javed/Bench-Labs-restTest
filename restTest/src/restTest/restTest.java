@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.json.*;
 
@@ -17,8 +18,17 @@ public class restTest {
 	 * Hashmap which holds all transactions for each unique date
 	 */
 	public static HashMap<String, ArrayList<TransactionNode>> transactionsMap;
-
+	
+	/*
+	 * Verbose setting passed through command line argument
+	 */
+	static boolean verbose = false;
+	static boolean daily = false;
+	static boolean daily_verbose = false;
+	
 	public static void main(String[] args) {
+				
+		parseArguments(args);
 		
 		// total number of transactions
 		int totalCount;
@@ -39,16 +49,15 @@ public class restTest {
 				
 				totalCount = page.getInt(Constants.PAGE_TOTAL_COUNT_KEY);
 				
-				System.out.println("Total transactions:");
-				System.out.println(totalCount);
+				if (verbose) {
+					System.out.println("Total transactions:");
+					System.out.println(totalCount);
+				}
 
 				// Number of transactions each page contains
 				// Keeps the code dynamic assuming each page doesn't always contain 10 transactions
 				JSONArray transOnPage = page.getJSONArray(Constants.TRANSACTION_KEY);
 				int transactionsLeft = calculateTransactionsLeft(totalCount, transOnPage.length());
-				
-				System.out.println("Transactions Left to load:");
-				System.out.println(transactionsLeft);
 				
 				// Get the next page if there's still transactions left to retrieve (in pages)
 				while (transactionsLeft > 0) {
@@ -58,13 +67,14 @@ public class restTest {
 					transOnPage = page.getJSONArray(Constants.TRANSACTION_KEY);
 
 					transactionsLeft = calculateTransactionsLeft(transactionsLeft, transOnPage.length());		
-					System.out.println(transactionsLeft);
 					
 					pages.add(page);
 				}
 				
-				System.out.println("Total pages:");
-				System.out.println(pages.size() + "\n\n");
+				if (verbose) {
+					System.out.println("Total pages:");
+					System.out.println(pages.size() + "\n\n");
+				}
 				
 				// Parse transactions and store them by date
 				transactionsMap = new HashMap<String, ArrayList<TransactionNode>>();
@@ -79,7 +89,35 @@ public class restTest {
 		}
 
 	}
-	
+
+	private static void parseArguments(String[] args) {
+		if (args.length < 1) {
+			return;
+		}
+		
+		for (String arg : args) {	
+			switch (arg) {
+				case Constants.VERBOSE:
+					verbose = true;
+					break;
+				case Constants.VERBOSE_DAILY_BALANCE:
+					daily_verbose = true;
+					break;
+				case Constants.DAILY_BALANCE:
+					daily = true;
+					break;
+				case Constants.CATEGORIZE:
+					break;
+				default:
+					System.out.println("Bad argument" + arg);
+					System.out.println("The correct usage is:\n");
+					System.out.println("java -jar restTest.jar [-v] [--daily] [--cat] [--verbose-daily]");
+					System.out.println("The order of arguments does not matter.\n");
+					throw new IllegalArgumentException("Illegal Command Line Argument: " + arg);				
+			}
+		}
+	}
+
 	/**
 	 * Calculates daily and total balance
 	 */
@@ -89,7 +127,7 @@ public class restTest {
 		java.util.Collections.sort(dates);
 		ArrayList<TransactionNode> transactions;
 		
-		// Nifty demical formatting pattern found online!
+		// Nifty decimal formatting pattern found online!
 		DecimalFormat currencyFormat = new DecimalFormat("$#,##0.00;-$#,##0.00");
 		
 		// Totals
@@ -102,10 +140,13 @@ public class restTest {
 		double dailyExpenses;
 		double dailyPayments;
 		
-
-		printAndFormatColumns("Date", "Daily Balance", "Daily Expenses", "Daily Payments");
-		printAndFormatColumns("----", "-------------", "--------------", "--------------");
-		
+		if (!verbose && daily) {
+			printAndFormatColumns("Daily Balance", "Payments", "Expenses", "Date");
+			printAndFormatColumns("-------------", "--------", "--------", "----");
+		} else if (verbose || daily_verbose) {
+			printAndFormatColumns("Company", "Daily Balance", "Payments", "Expenses", "Date");
+			printAndFormatColumns("-------", "-------------", "--------", "--------", "----");
+		}
 		for (String date : dates) {
 			transactions = transactionsMap.get(date);
 			
@@ -114,31 +155,60 @@ public class restTest {
 			dailyPayments = 0;
 			
 			for (TransactionNode trans : transactions) {
+				
 				dailyBalance += trans.amount;
+				
 				if (trans.amount < 0) {
+					
+					if (verbose || daily_verbose)
+						printAndFormatColumns(trans.company.substring(0, 10),
+											  "",
+											  "",
+											  currencyFormat.format(trans.amount * -1),
+											  date);
+					
 					dailyExpenses += trans.amount;
 				} else {
+					if (verbose || daily_verbose)
+						printAndFormatColumns(trans.company.substring(0, 10),
+											  "",
+											  currencyFormat.format(trans.amount),
+											  "",
+											  date);
+					
 					dailyPayments += trans.amount;
 				}
 			}
 			
-			printAndFormatColumns(date, currencyFormat.format(dailyBalance), 
-										     currencyFormat.format(dailyExpenses), 
-										     currencyFormat.format(dailyPayments));
-			
 			totalBalance += dailyBalance;
 			totalExpenses += dailyExpenses;
 			totalPayments += dailyPayments;
+			
+			if (!verbose && daily){
+				printAndFormatColumns(currencyFormat.format(totalBalance),
+											currencyFormat.format(dailyPayments),
+											currencyFormat.format(dailyExpenses),
+											date);
+				System.out.println("");
+			} else if (verbose || daily_verbose) {
+				System.out.println("");
+				printAndFormatColumns("---Total---", currencyFormat.format(dailyBalance),
+						currencyFormat.format(dailyPayments),
+						currencyFormat.format(dailyExpenses),
+						"");
+				System.out.println("");
+			}
 		}
 		
 		System.out.println("\n");
-		printAndFormatColumns("Total Balance", "Total Expenses", "Total Payments");
+		printAndFormatColumns("Final Balance", "Total Payments", "Total Expenses");
 		printAndFormatColumns("-------------", "--------------", "--------------");
 		
 		printAndFormatColumns(currencyFormat.format(totalBalance),
-								   currencyFormat.format(totalExpenses),
-								   currencyFormat.format(totalPayments));
+							  currencyFormat.format(totalPayments),
+							  currencyFormat.format(totalExpenses));
 	}
+	
 
 	/**
 	 * Formats arguments passed on as evenly spaced columns
@@ -146,15 +216,17 @@ public class restTest {
 	 */
 	private static void printAndFormatColumns(String... columns) {
 		// Assume no string is larger than 25 characters
-		String spaces = "                    ";
+		String spaces = "                         ";
 		
 		for (String col : columns) {
 			System.out.print(col);
-			System.out.print(spaces.substring(col.length()));
+			if (col.length() < spaces.length())
+				System.out.print(spaces.substring(col.length()));
 		}
 		System.out.println("");
 	}
 
+	
 	/**
 	 * Calculate how many transactions are left
 	 * @param currentTotal Transactions expected
@@ -164,6 +236,7 @@ public class restTest {
 	private static int calculateTransactionsLeft(int currentTotal, int transOnPage) {
 		return currentTotal - transOnPage;
 	}
+	
 	
 	/**
 	 * Parses the JSON objects retrieved from the API, creates TransactionNodes for each
@@ -205,6 +278,7 @@ public class restTest {
 		}
 	}
 
+	
 	/**
 	 * Connect to API and retrieve pages of transactions
 	 * @param urlString

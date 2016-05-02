@@ -19,5 +19,11 @@ public class Constants {
 	public static String TRANSACTION_AMOUNT_KEY = "Amount";
 	
 	public static String TRANSACTION_COMPANY_KEY = "Company";
-
+	
+	// Command line arguments
+	
+	public static final String VERBOSE = "-v";
+	public static final String DAILY_BALANCE = "--daily";
+	public static final String CATEGORIZE = "--cat";
+	public static final String VERBOSE_DAILY_BALANCE = "--verbose-daily";
 }
