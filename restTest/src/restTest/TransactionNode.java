@@ -28,6 +28,8 @@ class TransactionNode {
 	
 	TransactionNode next;
 	
+	private boolean duplicate;
+	
 	public TransactionNode(String d, String l, String a, String c) {
 		
 		// Parse the string date into a comparable format
@@ -48,6 +50,8 @@ class TransactionNode {
 		this.next = null;
 		
 		this.formattedCompany = validateCompanyName(c);
+		
+		this.declareDuplicate(false);
 	}
 	
 	/**
@@ -74,6 +78,11 @@ class TransactionNode {
 		return c;
 	}
 	
+	/**
+	 * For formatting reasons, check if the company name is going to fit in
+	 * nicely into the printed columns. If not, return a truncated name.
+	 * @return
+	 */
 	public String getFormattedCompanyName(){
 		
 		if (this.formattedCompany.length() > 15){
@@ -81,5 +90,19 @@ class TransactionNode {
 		}
 		
 		return this.formattedCompany;
+	}
+
+	/**
+	 * @return if is duplicate
+	 */
+	public boolean isDuplicate() {
+		return duplicate;
+	}
+
+	/**
+	 * @param boolean declaring status duplicate status
+	 */
+	public void declareDuplicate(boolean d) {
+		this.duplicate = d;
 	}
 }

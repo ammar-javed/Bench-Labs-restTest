@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.json.*;
 
@@ -202,6 +203,8 @@ public class restTest {
 	 */
 	private static void parseTransactions(ArrayList<JSONObject> pages) {
 		
+		HashSet<String> uniqueTrans = new HashSet<String>();
+		
 		for (JSONObject page : pages) {
 			try {
 				
@@ -218,6 +221,12 @@ public class restTest {
 					//Create new node which will convert/format the date and amount as necessary
 					TransactionNode transaction = new TransactionNode(date, ledger, amount, company);
 					
+					boolean unique = uniqueTrans.add(date+ledger+amount+company);
+					
+					if (!unique)
+						transaction.declareDuplicate(true);
+					
+					// Add transaction node to hashmap
 					if(transactionsMap.containsKey(date)) {
 						// Add to hashmap
 						transactionsMap.get(date).add(transaction);
