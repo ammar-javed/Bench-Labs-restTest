@@ -250,7 +250,7 @@ public class restTest {
 	 */
 	private static void printAndFormatColumns(String... columns) {
 		// Assume no string is larger than 25 characters
-		String spaces = "                         ";
+		String spaces = "                    ";
 		
 		for (String col : columns) {
 			System.out.print(col);
@@ -330,6 +330,8 @@ public class restTest {
 		
 		printDailyBalanceHeader();
 		
+		boolean duplicateTrans = false;
+		
 		for (String date : dates) {
 			transactions = transactionsMap.get(date);
 			
@@ -337,27 +339,37 @@ public class restTest {
 			dailyExpenses = 0;
 			dailyPayments = 0;
 			
+			duplicateTrans = false;
+			
 			for (TransactionNode trans : transactions) {
 				
 				dailyBalance += trans.amount;
 				
+				if (trans.isDuplicate())
+					duplicateTrans = true;
+				
 				if (trans.amount < 0) {
 					
-					if (verbose || dailyVerbose)
+					if (verbose || dailyVerbose) {
 						printAndFormatColumns(trans.getFormattedCompanyName(),
 											  "",
 											  "",
 											  currencyFormat.format(trans.amount),
-											  date);
+											  date,
+											  duplicateTrans ? "** Duplicate **" : "");
+						
+					}
 					
 					dailyExpenses += trans.amount;
 				} else {
-					if (verbose || dailyVerbose)
+					if (verbose || dailyVerbose) {
 						printAndFormatColumns(trans.getFormattedCompanyName(),
 											  "",
 											  currencyFormat.format(trans.amount),
 											  "",
-											  date);
+											  date,
+											  duplicateTrans ? "** Duplicate **" : "");
+					}
 					
 					dailyPayments += trans.amount;
 				}
@@ -372,7 +384,8 @@ public class restTest {
 				printAndFormatColumns(currencyFormat.format(totalBalance),
 									  currencyFormat.format(dailyPayments),
 								   	  currencyFormat.format(dailyExpenses),
-								   	  date);
+								   	  date,
+								   	  duplicateTrans ? "** Contains Duplicate Transaction(s) **" : "");
 				System.out.println("");
 				
 			} else if (verbose || dailyVerbose) {
@@ -382,7 +395,8 @@ public class restTest {
 									  currencyFormat.format(dailyBalance),
 									  currencyFormat.format(dailyPayments),
 									  currencyFormat.format(dailyExpenses),
-									  "");
+									  "",
+									  duplicateTrans ? "** Contains Duplicate Transaction(s) **" : "");
 				System.out.println("");
 				
 			}
@@ -414,18 +428,28 @@ public class restTest {
 			printAndFormatColumns("", "----", "-------");
 			
 			double ledgeExpense = 0;
+			boolean duplicate = false;
 			
 			ArrayList<TransactionNode> transactions = expenseMap.get(expense);
 			for (TransactionNode trans : transactions) {
+				if (trans.isDuplicate())
+					duplicate = true;
+				
 				printAndFormatColumns("", 
 									  trans.getFormattedCompanyName(), 
-									  currencyFormat.format(trans.amount));
+									  currencyFormat.format(trans.amount),
+									  duplicate ? "** Duplicate **" : "");
 				
 				ledgeExpense += trans.amount;
 			}
 			
 			System.out.println("");
-			printAndFormatColumns("Total", "", currencyFormat.format(ledgeExpense));
+			
+			printAndFormatColumns("Total", 
+								  "", 
+								  currencyFormat.format(ledgeExpense), 
+								  duplicate ? "** Contains Duplicate Transaction(s) **" : "");
+			
 			System.out.println("");
 		}
 		
