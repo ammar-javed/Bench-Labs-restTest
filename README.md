@@ -22,3 +22,9 @@ The `--daily` flag outputs a calculated Daily Balance.
 The `--verbose-daily` flag outputs calculated Daily Balances along with each inidividual transactions as well.
 
 ** Note that the order of flags does not matter **
+
+Here are some screenshots of reports output into the terminal.
+
+![Alt text](/img1.png?raw=true)
+
+![Alt text](/img2.png?raw=true)
